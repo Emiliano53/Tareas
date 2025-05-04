@@ -1,9 +1,9 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+// next.config.js
+/** @type {import('next').NextConfig} */
+module.exports = {
   reactStrictMode: true,
   experimental: {
-    appDir: true, // Habilita App Router
+    serverActions: true,
   },
   webpack: (config) => {
     config.resolve.fallback = { 
@@ -13,7 +13,5 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
-  transpilePackages: ['@prisma/client'],
+  transpilePackages: ['@prisma/client']
 };
-
-export default nextConfig;
