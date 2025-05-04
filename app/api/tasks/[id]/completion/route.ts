@@ -1,45 +1,48 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
-// Obtener estado de completado
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Reemplaza esto con tu lógica real de base de datos
-    const taskStatus = {
-      id: params.id,
-      completed: false // Valor por defecto
-    };
+    // Convertir el ID de string a número
+    const taskId = parseInt(params.id);
     
-    return NextResponse.json(taskStatus);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error al cargar estado" },
-      { status: 500 }
-    );
-  }
-}
+    // Validar que sea un número válido
+    if (isNaN(taskId)) {
+      return NextResponse.json(
+        { error: "ID debe ser un número" },
+        { status: 400 }
+      );
+    }
 
-// Actualizar estado de completado
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { completed } = await request.json();
-    
-    // Reemplaza esto con tu lógica real de base de datos
-    console.log(`Actualizando tarea ${params.id} a completed=${completed}`);
-    
-    return NextResponse.json({
-      success: true,
-      id: params.id,
-      completed
+    const task = await prisma.task.findUnique({
+      where: { id: taskId }, // Usar el número convertido
+      select: { 
+        completed: true,
+        userId: true // Importante para validar permisos
+      }
     });
+
+    if (!task) {
+      return NextResponse.json(
+        { error: "Tarea no encontrada" },
+        { status: 404 }
+      );
+    }
+
+    // Verificación adicional de seguridad (opcional)
+    // const session = await getSession();
+    // if (task.userId !== session.user.id) {
+    //   return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+    // }
+
+    return NextResponse.json({ completed: task.completed });
   } catch (error) {
+    console.error('Error en API route:', error);
     return NextResponse.json(
-      { error: "Error al actualizar estado" },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }

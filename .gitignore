@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Agrega esto en tu archivo .gitignore
+/node_modules
+/.next
+.env
+.DS_Store
+.prisma
+.next
