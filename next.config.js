@@ -1,17 +1,23 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverActions: true,
+    serverActions: {}, // Cambiado de `true` a objeto (requerido en Next.js 14+)
+    optimizeCss: false, // Opcional: solo si usas CSS no estándar
   },
+  // Reemplaza 'serverComponentsExternalPackages' y 'transpilePackages' por:
+  serverExternalPackages: ['@prisma/client'], // Nueva clave unificada
   webpack: (config) => {
     config.resolve.fallback = { 
       fs: false, 
       net: false, 
-      tls: false 
+      tls: false,
+      child_process: false,
+      dns: false
     };
     return config;
   },
-  transpilePackages: ['@prisma/client']
+  output: 'standalone' // Recomendado para Vercel
 };
+
+module.exports = nextConfig;
