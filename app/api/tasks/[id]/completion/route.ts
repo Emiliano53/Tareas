@@ -1,49 +1,43 @@
+// app/api/tasks/[id]/completion/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+// Solución: Usar Response nativo en lugar de NextResponse
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
-) {
+): Promise<Response> {  // <-- Cambio crucial aquí
   try {
-    // Convertir el ID de string a número
     const taskId = parseInt(params.id);
     
-    // Validar que sea un número válido
     if (isNaN(taskId)) {
-      return NextResponse.json(
-        { error: "ID debe ser un número" },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "ID inválido" }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     const task = await prisma.task.findUnique({
-      where: { id: taskId }, // Usar el número convertido
-      select: { 
-        completed: true,
-        userId: true // Importante para validar permisos
-      }
+      where: { id: taskId },
+      select: { completed: true }
     });
 
     if (!task) {
-      return NextResponse.json(
-        { error: "Tarea no encontrada" },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: "Tarea no encontrada" }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verificación adicional de seguridad (opcional)
-    // const session = await getSession();
-    // if (task.userId !== session.user.id) {
-    //   return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    // }
-
-    return NextResponse.json({ completed: task.completed });
+    return new Response(
+      JSON.stringify({ completed: task.completed }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Error en API route:', error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: "Error interno del servidor" }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

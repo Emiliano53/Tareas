@@ -1,86 +1,41 @@
 // app/api/register/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 
-const prisma = new PrismaClient();
-
-export async function POST(req: Request) {
+export async function POST(request: Request): Promise<Response> {
   try {
-    const { email, password } = await req.json();
-    
-    // Validación de campos requeridos
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email y contraseña son requeridos' },
-        { status: 400 }
-      );
-    }
+    const { email, password } = await request.json();
 
-    // Validación de longitud mínima de contraseña
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres' },
-        { status: 400 }
-      );
-    }
-
-    // Validación de formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'El formato del email no es válido' },
-        { status: 400 }
-      );
-    }
-
-    // Verificar si el usuario ya existe (insensible a mayúsculas)
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        email: {
-          equals: email,
-          mode: 'insensitive'
-        }
-      }
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'El email ya está registrado' },
-        { status: 409 }
+      return new Response(
+        JSON.stringify({ error: 'User already exists' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Hashear la contraseña
-    const hashedPassword = await hash(password, 12);
-
-    // Crear nuevo usuario
-    const newUser = await prisma.user.create({
-      data: {
-        email: email.toLowerCase().trim(), // Normalizar email
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        email: true
-      }
+    const hashedPassword = await hash(password, 10);
+    const user = await prisma.user.create({
+      data: { email, password: hashedPassword }
     });
 
-    return NextResponse.json(
-      { 
-        message: 'Usuario registrado exitosamente',
-        user: newUser 
-      },
-      { status: 201 }
+    return new Response(
+      JSON.stringify({ 
+        message: 'User created',
+        user: { id: user.id, email: user.email }
+      }),
+      { status: 201, headers: { 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error en el registro:', error);
-    return NextResponse.json(
-      { error: 'Ocurrió un error al procesar el registro' },
-      { status: 500 }
+    console.error(error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
